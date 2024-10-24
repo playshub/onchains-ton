@@ -4,6 +4,8 @@ import { Transaction } from '@ton/core';
 import { TonTxIdentify } from 'src/types/ton';
 import { ParserService } from '../parser/parser.service';
 import { delay } from 'src/utils/helpers';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventChannels } from 'src/types/events';
 
 const REALTIME_TRANSACTION_BATCH_SIZE = 20;
 const BACKFILL_TRANSACTION_BATCH_SIZE = 50;
@@ -15,11 +17,12 @@ export class SyncService {
   constructor(
     private readonly tonApiService: TonApiService,
     private readonly parserService: ParserService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   private async processTransactions(
     transactions: Transaction[],
-    backfill?: boolean,
+    backfill: boolean = false,
   ) {
     try {
       if (transactions.length === 0) {
@@ -29,6 +32,11 @@ export class SyncService {
       const parsedTransactions = transactions
         .map((tx) => this.parserService.parse(tx))
         .filter((tx) => Boolean(tx));
+
+      this.eventEmitter.emit(EventChannels.PlayshubTransactionCreated, {
+        transactions: parsedTransactions,
+        backfill,
+      });
     } catch (e) {
       this.logger.debug(
         `Error processing transactions: from ${transactions[0].lt.toString()} to ${transactions[transactions.length - 1].lt.toString()} of account ${transactions[0]?.inMessage?.info?.src?.toString()}`,
