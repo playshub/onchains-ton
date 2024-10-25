@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
 import { EventChannels, PlayshubTransactionEvent } from 'src/types/events';
 import { PlayshubTransaction } from 'src/types/playshub';
@@ -9,9 +10,13 @@ const MAX_TRIES_COUNT = 3;
 @Injectable()
 export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
-  private webhookUrl: string = 'https://';
+  private webhookUrl;
 
-  constructor() {}
+  constructor(private readonly configService: ConfigService) {
+    this.webhookUrl = this.configService.get<string>(
+      'ANALYTICS_SERVICE_BASE_URL',
+    );
+  }
 
   @OnEvent(EventChannels.PlayshubTransactionCreated)
   handlePlayshubTransactionCreated(args: PlayshubTransactionEvent['data']) {
@@ -21,8 +26,10 @@ export class WebhookService {
   }
 
   private async trySendWebhook(args: PlayshubTransaction, retryCount = 0) {
+    const webhookUrl = `${this.webhookUrl}/Track/AddTransaction?ApiKey=R2NLCHNUN5IV`;
+
     try {
-      await fetch(this.webhookUrl, {
+      await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,7 +39,7 @@ export class WebhookService {
     } catch (e) {
       this.logger.error(`Webhook failed to send. Error: ${e.message}`, {
         retryCount,
-        webhookUrl: this.webhookUrl,
+        webhookUrl,
       });
 
       // Add a delay before retrying (using exponential backoff)
@@ -44,7 +51,7 @@ export class WebhookService {
 
       if (retryCount == MAX_TRIES_COUNT) {
         throw new Error(
-          `Max retry attempts reached for webhook: ${this.webhookUrl}`,
+          `Max retry attempts reached for webhook: ${webhookUrl}`,
         );
       }
 
