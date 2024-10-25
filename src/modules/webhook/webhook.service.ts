@@ -4,6 +4,12 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { EventChannels, PlayshubTransactionEvent } from 'src/types/events';
 import { PlayshubTransaction } from 'src/types/playshub';
 import { delay } from 'src/utils/helpers';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import {
+  WebhookStatusEntity,
+  WebhookStatusType,
+} from './entities/webhook-status.entity';
 
 const MAX_TRIES_COUNT = 3;
 
@@ -12,7 +18,11 @@ export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
   private webhookUrl;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @InjectRepository(WebhookStatusEntity)
+    private webhookStatusRepository: Repository<WebhookStatusEntity>,
+  ) {
     this.webhookUrl = this.configService.get<string>(
       'ANALYTICS_SERVICE_BASE_URL',
     );
@@ -29,6 +39,17 @@ export class WebhookService {
     const webhookUrl = `${this.webhookUrl}/Track/AddTransaction?ApiKey=R2NLCHNUN5IV`;
 
     try {
+      await this.webhookStatusRepository
+        .createQueryBuilder()
+        .insert()
+        .values({
+          hash: args.hash,
+          status: WebhookStatusType.Pending,
+          attempts: retryCount + 1,
+        })
+        .orUpdate(['attempts'], ['hash'])
+        .execute();
+
       await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -36,6 +57,13 @@ export class WebhookService {
         },
         body: JSON.stringify(args),
       });
+
+      await this.webhookStatusRepository
+        .createQueryBuilder()
+        .update()
+        .set({ status: WebhookStatusType.Success })
+        .where('hash = :hash', { hash: args.hash })
+        .execute();
     } catch (e) {
       this.logger.error(`Webhook failed to send. Error: ${e.message}`, {
         retryCount,
@@ -50,7 +78,13 @@ export class WebhookService {
       await delay(delayMs);
 
       if (retryCount == MAX_TRIES_COUNT) {
-        throw new Error(
+        await this.webhookStatusRepository
+          .createQueryBuilder()
+          .update()
+          .set({ status: WebhookStatusType.Failed })
+          .where('hash = :hash', { hash: args.hash })
+          .execute();
+        this.logger.error(
           `Max retry attempts reached for webhook: ${webhookUrl}`,
         );
       }
