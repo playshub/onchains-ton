@@ -8,5 +8,6 @@ import { ObserverAccountsService } from './observer-accounts.service';
   imports: [TypeOrmModule.forFeature([ObserverAccountsEntity])],
   controllers: [ObserverAccountsController],
   providers: [ObserverAccountsService],
+  exports: [ObserverAccountsService],
 })
 export class ObserverAccountsModule {}

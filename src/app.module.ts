@@ -6,6 +6,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { WebhookModule } from './modules/webhook/webhook.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlayshubTransactionsModule } from './modules/playshub-transactions/playshub-transactions.module';
+import { ObserverAccountsModule } from './modules/observer-accounts/observer-accounts.module';
 
 @Module({
   imports: [
@@ -26,8 +27,7 @@ import { PlayshubTransactionsModule } from './modules/playshub-transactions/play
     CronsModule,
     WebhookModule,
     PlayshubTransactionsModule,
+    ObserverAccountsModule,
   ],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}

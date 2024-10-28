@@ -3,49 +3,51 @@ import { Cron } from '@nestjs/schedule';
 import { SyncService } from '../sync/sync.service';
 import { TonApiService } from '../ton-api/ton-api.service';
 import { TonTxIdentify } from 'src/types/ton';
+import { ObserverAccountsService } from '../observer-accounts/observer-accounts.service';
+import { ObserverAccountsEntity } from '../observer-accounts/entities/observer-accounts.entity';
 
 const SYNC_INTERVAL = 10; // 10 seconds per sync
 
 @Injectable()
 export class CronsService {
   private readonly logger = new Logger(CronsService.name);
-  private readonly latestTxLt: Map<string, TonTxIdentify> = new Map();
-  private readonly observerAccounts = [
-    'EQDUE6sTN0Pg7Vtqos90nyrfO_9iVTUUYurnroEARSeo2pBg', // aao
-    'UQBZ1Lzyfx81Vph2EL2jsQk9pzqo3SC5wit6OyS23ZrUO_xH', // major
-    'UQBj96aEiJlFV4Si16ajonjQRHf_OOb-80WXTOOUTHxd8h0a', // catizen
-  ];
   private lock = false; // Only 1 worker is working
 
   constructor(
     private readonly syncService: SyncService,
     private readonly tonApiService: TonApiService,
-  ) {
-    for (const account of this.observerAccounts) {
-      this.latestTxLt.set(account, { lt: '0', hash: '' });
-    }
-  }
+    private readonly observerAccountsService: ObserverAccountsService,
+  ) {}
 
   @Cron(`*/${SYNC_INTERVAL} * * * * *`)
   async start() {
     if (this.lock) {
       return;
     }
+
+    const observerAccounts = await this.observerAccountsService.getAll();
+    if (observerAccounts.length === 0) {
+      this.logger.debug('No observer accounts to sync');
+      return;
+    }
+
     this.lock = true;
+
     this.logger.debug(
       `Sync latest transactions every ${SYNC_INTERVAL} seconds`,
     );
 
-    await Promise.all(
-      this.observerAccounts.map((account) => this.sync(account)),
-    );
+    await Promise.all(observerAccounts.map((account) => this.sync(account)));
 
     this.lock = false;
   }
 
-  private async sync(account: string) {
-    const headTx = await this.tonApiService.getLastTransaction(account);
-    const localTx = this.latestTxLt.get(account);
+  private async sync(account: ObserverAccountsEntity) {
+    const headTx = await this.tonApiService.getLastTransaction(account.address);
+    const localTx = {
+      lt: account.lastTxLt,
+      hash: account.lastTxHash,
+    };
 
     if (!headTx) {
       // Nothing to sync
@@ -57,8 +59,12 @@ export class CronsService {
       return;
     }
 
-    await this.realTimeSync(account, localTx, headTx);
-    this.latestTxLt.set(account, headTx);
+    await this.realTimeSync(account.address, localTx, headTx);
+    await this.observerAccountsService.setLastTx(
+      account.address,
+      headTx.lt,
+      headTx.hash,
+    );
   }
 
   private async realTimeSync(

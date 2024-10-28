@@ -38,4 +38,21 @@ export class ObserverAccountsService {
 
     return this.observerAccountRepository.remove(account);
   }
+
+  async setLastTx(address: string, lt: string, hash: string) {
+    const account = await this.observerAccountRepository.findOne({
+      where: { address },
+    });
+
+    if (!account) {
+      throw new NotFoundException(
+        `Account with address ${address} does not exist`,
+      );
+    }
+
+    account.lastTxLt = lt;
+    account.lastTxHash = hash;
+
+    return this.observerAccountRepository.save(account);
+  }
 }
