@@ -6,10 +6,7 @@ import { ParserService } from '../parser/parser.service';
 import { delay } from 'src/utils/helpers';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventChannels } from 'src/types/events';
-
-const REALTIME_TRANSACTION_BATCH_SIZE = 20;
-const BACKFILL_TRANSACTION_BATCH_SIZE = 50;
-const MAX_TRIES_COUNT = 3;
+import { getSettings } from 'src/utils/settings';
 
 @Injectable()
 export class SyncService {
@@ -51,7 +48,7 @@ export class SyncService {
   ) {
     // Get latest transactions from lt with batch size
     let latestTransactions = await this.tryGetTransactions(account, {
-      limit: REALTIME_TRANSACTION_BATCH_SIZE,
+      limit: getSettings().realtimeTransactionsBatchSize,
       lt: headTx.lt,
       hash: headTx.hash,
     });
@@ -89,7 +86,7 @@ export class SyncService {
     // batch sync transactions
     let nextTx = tx;
     let nextTransactions = await this.tryGetTransactions(account, {
-      limit: BACKFILL_TRANSACTION_BATCH_SIZE,
+      limit: getSettings().backfillTransactionsBatchSize,
       lt: nextTx.lt,
       hash: nextTx.hash,
       to_lt: toTx.lt,
@@ -102,13 +99,15 @@ export class SyncService {
     );
     await this.processTransactions(nextTransactions, true);
 
-    while (nextTransactions.length === BACKFILL_TRANSACTION_BATCH_SIZE) {
-      await delay(10000);
+    while (
+      nextTransactions.length === getSettings().backfillTransactionsBatchSize
+    ) {
+      await delay(getSettings().backfillDelayTime);
       nextTx = this.getTonTxIdentifyFromTx(
         nextTransactions[nextTransactions.length - 1],
       );
       nextTransactions = await this.tryGetTransactions(account, {
-        limit: BACKFILL_TRANSACTION_BATCH_SIZE,
+        limit: getSettings().backfillTransactionsBatchSize,
         lt: nextTx.lt,
         hash: nextTx.hash,
         to_lt: toTx.lt,
@@ -135,20 +134,24 @@ export class SyncService {
   ): Promise<Transaction[]> {
     let transactions: Transaction[] = [];
     try {
+      this.logger.log(
+        `[Attempts #${retryCount + 1}}] Getting transactions address (${address}), lt: ${opts.lt}, to_lt ${opts.to_lt}, hash: ${opts.hash}`,
+      );
       transactions = await this.tonApiService.getTransactions(address, opts);
       return transactions;
     } catch (e) {
+      this.logger.error(e);
       if (e.code === 429) {
         this.logger.error(`Rate limit exceeded`);
-      } else {
-        this.logger.error(e);
-      }
-      // if an API error occurs, try again
-      if (retryCount == MAX_TRIES_COUNT) {
-        throw e;
       }
 
-      this.logger.debug(`Attemps ${retryCount + 1}`);
+      if (retryCount == getSettings().maxRetryCount) {
+        this.logger.error(
+          `Max retry count exceeded address (${address}), lt: ${opts.lt}, to_lt ${opts.to_lt}, hash: ${opts.hash}`,
+        );
+        return [];
+      }
+
       return this.tryGetTransactions(address, opts, retryCount + 1);
     }
   }

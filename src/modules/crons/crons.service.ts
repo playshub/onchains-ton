@@ -5,8 +5,7 @@ import { TonApiService } from '../ton-api/ton-api.service';
 import { TonTxIdentify } from 'src/types/ton';
 import { ObserverAccountsService } from '../observer-accounts/observer-accounts.service';
 import { ObserverAccountsEntity } from '../observer-accounts/entities/observer-accounts.entity';
-
-const SYNC_INTERVAL = 10; // 10 seconds per sync
+import { getSettings } from 'src/utils/settings';
 
 @Injectable()
 export class CronsService {
@@ -19,7 +18,7 @@ export class CronsService {
     private readonly observerAccountsService: ObserverAccountsService,
   ) {}
 
-  @Cron(`*/${SYNC_INTERVAL} * * * * *`)
+  @Cron(`*/${getSettings().syncInterval} * * * * *`)
   async start() {
     if (this.lock) {
       return;
@@ -31,14 +30,12 @@ export class CronsService {
       return;
     }
 
-    this.lock = true;
-
     this.logger.debug(
-      `Sync latest transactions every ${SYNC_INTERVAL} seconds`,
+      `Sync latest transactions every ${getSettings().syncInterval} seconds`,
     );
 
+    this.lock = true;
     await Promise.all(observerAccounts.map((account) => this.sync(account)));
-
     this.lock = false;
   }
 

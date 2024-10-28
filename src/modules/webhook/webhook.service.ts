@@ -10,8 +10,7 @@ import {
   WebhookStatusEntity,
   WebhookStatusType,
 } from './entities/webhook-status.entity';
-
-const MAX_TRIES_COUNT = 3;
+import { getSettings } from 'src/utils/settings';
 
 @Injectable()
 export class WebhookService {
@@ -71,13 +70,11 @@ export class WebhookService {
       });
 
       // Add a delay before retrying (using exponential backoff)
-      const delayMs = Math.pow(2, retryCount) * 1000;
-      this.logger.debug(
-        `Retrying webhook. Attempt ${retryCount + 1} after ${delayMs}ms`,
-      );
+      const delayMs = Math.pow(2, retryCount) * getSettings().webhookDelayTime;
+      this.logger.debug(`Retrying webhook. Attempt ${retryCount + 1}`);
       await delay(delayMs);
 
-      if (retryCount == MAX_TRIES_COUNT) {
+      if (retryCount == getSettings().maxRetryCount) {
         await this.webhookStatusRepository
           .createQueryBuilder()
           .update()
