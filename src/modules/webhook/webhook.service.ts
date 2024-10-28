@@ -16,7 +16,7 @@ const MAX_TRIES_COUNT = 3;
 @Injectable()
 export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
-  private webhookUrl;
+  private webhookUrl: string;
 
   constructor(
     private readonly configService: ConfigService,
