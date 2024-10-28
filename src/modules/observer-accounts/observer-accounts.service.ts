@@ -25,6 +25,7 @@ export class ObserverAccountsService {
       lastTxHash: '',
       lastTxLt: '0',
       stopped: false,
+      synced: false,
     });
 
     return this.observerAccountRepository.save(observerAccount);
@@ -59,6 +60,22 @@ export class ObserverAccountsService {
 
     account.lastTxLt = lt;
     account.lastTxHash = hash;
+
+    return this.observerAccountRepository.save(account);
+  }
+
+  async setSyncedStatus(address: string, synced: boolean) {
+    const account = await this.observerAccountRepository.findOne({
+      where: { address },
+    });
+
+    if (!account) {
+      throw new NotFoundException(
+        `Account with address ${address} does not exist`,
+      );
+    }
+
+    account.synced = synced;
 
     return this.observerAccountRepository.save(account);
   }

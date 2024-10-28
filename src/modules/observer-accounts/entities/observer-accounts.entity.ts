@@ -16,4 +16,7 @@ export class ObserverAccountsEntity {
 
   @Column()
   stopped: boolean;
+
+  @Column()
+  synced: boolean;
 }

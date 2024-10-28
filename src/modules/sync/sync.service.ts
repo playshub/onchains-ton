@@ -7,6 +7,7 @@ import { delay } from 'src/utils/helpers';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventChannels } from 'src/types/events';
 import { getSettings } from 'src/utils/settings';
+import { ObserverAccountsService } from '../observer-accounts/observer-accounts.service';
 
 @Injectable()
 export class SyncService {
@@ -15,6 +16,7 @@ export class SyncService {
     private readonly tonApiService: TonApiService,
     private readonly parserService: ParserService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly observerAccountsService: ObserverAccountsService,
   ) {}
 
   private async processTransactions(
@@ -80,6 +82,7 @@ export class SyncService {
     toTx: TonTxIdentify,
     tx: TonTxIdentify,
   ) {
+    await this.observerAccountsService.setSyncedStatus(account, false);
     this.logger.debug(
       `Backfill sync transactions of account: ${account} from ${tx.lt} to ${toTx.lt}`,
     );
@@ -120,6 +123,7 @@ export class SyncService {
       );
       await this.processTransactions(nextTransactions, true);
     }
+    await this.observerAccountsService.setSyncedStatus(account, true);
   }
 
   private async tryGetTransactions(
