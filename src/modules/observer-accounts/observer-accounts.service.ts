@@ -14,18 +14,23 @@ export class ObserverAccountsService {
     return this.observerAccountRepository.find();
   }
 
+  getActive() {
+    return this.observerAccountRepository.find({ where: { stopped: false } });
+  }
+
   add(address: string, name: string) {
     const observerAccount = this.observerAccountRepository.create({
       address,
       name,
       lastTxHash: '',
       lastTxLt: '0',
+      stopped: false,
     });
 
     return this.observerAccountRepository.save(observerAccount);
   }
 
-  async remove(address: string) {
+  async setStatus(address: string, stopped: boolean) {
     const account = await this.observerAccountRepository.findOne({
       where: { address },
     });
@@ -36,7 +41,9 @@ export class ObserverAccountsService {
       );
     }
 
-    return this.observerAccountRepository.remove(account);
+    account.stopped = stopped;
+
+    return this.observerAccountRepository.save(account);
   }
 
   async setLastTx(address: string, lt: string, hash: string) {

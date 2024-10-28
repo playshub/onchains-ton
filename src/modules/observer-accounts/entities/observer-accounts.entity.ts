@@ -13,4 +13,7 @@ export class ObserverAccountsEntity {
 
   @Column()
   lastTxHash: string;
+
+  @Column()
+  stopped: boolean;
 }
