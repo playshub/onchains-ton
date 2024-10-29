@@ -19,6 +19,7 @@ export class PlayshubTransactionsService {
       .createQueryBuilder()
       .insert()
       .values(args.transactions)
+      .orIgnore()
       .execute();
   }
 }

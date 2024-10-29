@@ -38,6 +38,14 @@ export class WebhookService {
     const webhookUrl = `${this.webhookUrl}/Track/AddTransaction?ApiKey=R2NLCHNUN5IV`;
 
     try {
+      // Already send
+      const transaction = await this.webhookStatusRepository.findOne({
+        where: { hash: args.hash },
+      });
+      if (transaction && transaction.status === WebhookStatusType.Success) {
+        return;
+      }
+
       await this.webhookStatusRepository
         .createQueryBuilder()
         .insert()
