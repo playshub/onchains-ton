@@ -19,30 +19,6 @@ export class SyncService {
     private readonly observerAccountsService: ObserverAccountsService,
   ) {}
 
-  private async processTransactions(
-    transactions: Transaction[],
-    backfill: boolean = false,
-  ) {
-    try {
-      if (transactions.length === 0) {
-        return;
-      }
-
-      const parsedTransactions = transactions
-        .map((tx) => this.parserService.parse(tx))
-        .filter((tx) => Boolean(tx));
-
-      this.eventEmitter.emit(EventChannels.PlayshubTransactionCreated, {
-        transactions: parsedTransactions,
-        backfill,
-      });
-    } catch (e) {
-      this.logger.debug(
-        `Error processing transactions: from ${transactions[0].lt.toString()} to ${transactions[transactions.length - 1].lt.toString()} of account ${transactions[0]?.inMessage?.info?.src?.toString()}`,
-      );
-    }
-  }
-
   async syncLatestTransactions(
     account: string,
     localTx: TonTxIdentify,
@@ -124,6 +100,30 @@ export class SyncService {
       await this.processTransactions(nextTransactions, true);
     }
     await this.observerAccountsService.setSyncedStatus(account, true);
+  }
+
+  private async processTransactions(
+    transactions: Transaction[],
+    backfill: boolean = false,
+  ) {
+    try {
+      if (transactions.length === 0) {
+        return;
+      }
+
+      const parsedTransactions = transactions
+        .map((tx) => this.parserService.parse(tx))
+        .filter((tx) => Boolean(tx));
+
+      this.eventEmitter.emit(EventChannels.PlayshubTransactionCreated, {
+        transactions: parsedTransactions,
+        backfill,
+      });
+    } catch (e) {
+      this.logger.debug(
+        `Error processing transactions: from ${transactions[0].lt.toString()} to ${transactions[transactions.length - 1].lt.toString()} of account ${transactions[0]?.inMessage?.info?.src?.toString()}`,
+      );
+    }
   }
 
   private async tryGetTransactions(
