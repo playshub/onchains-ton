@@ -17,6 +17,7 @@ services:
       dockerfile: Dockerfile
     container_name: plays-data-blockchain
     environment:
+      - PORT=3000
       - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/postgres
       - IS_MAINNET=${IS_MAINNET}
       - API_KEY=${API_KEY}
