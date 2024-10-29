@@ -1,7 +1,7 @@
 version: '3'
 services:
   postgres:
-    container_name: postgres
+    container_name: plays-data-postgres
     image: postgres:latest
     ports:
       - 5432:5432
@@ -11,5 +11,19 @@ services:
       - POSTGRES_DB=postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
+  backend-services:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: plays-data-blockchain
+    environment:
+      - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/postgres
+      - IS_MAINNET=${IS_MAINNET}
+      - API_KEY=${API_KEY}
+      - ANALYTICS_SERVICE_BASE_URL=${ANALYTICS_SERVICE_BASE_URL}
+    ports:
+      - '${PORT}:3000'
+    depends_on:
+      - postgres
 volumes:
   postgres-data:
