@@ -3,8 +3,8 @@ export const getSettings = () => {
     syncInterval: 10, // seconds
     maxRetryCount: 5,
     realtimeTransactionsBatchSize: 20,
-    backfillTransactionsBatchSize: 50,
-    backfillDelayTime: 15000, // ms
+    backfillTransactionsBatchSize: 100,
+    backfillDelayTime: 1000, // ms
     webhookDelayTime: 1000, // ms
   };
 };
