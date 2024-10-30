@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Transaction } from '@ton/core';
 import {
   PlayshubTransaction,
@@ -9,31 +9,42 @@ import { TxBody } from 'src/types/ton';
 
 @Injectable()
 export class ParserService {
-  constructor() {}
-
+  private readonly logger = new Logger(ParserService.name);
   parse(tx: Transaction): PlayshubTransaction | null {
-    if (this.isIncomingToncoins(tx) && tx.inMessage.info?.type == 'internal') {
-      const parsedBody = this.parseBody(tx.inMessage.body);
-      let type = PlayshubTransactionType.Unknown;
-      let payload = '';
+    try {
+      if (
+        this.isIncomingToncoins(tx) &&
+        tx.inMessage.info?.type == 'internal'
+      ) {
+        const parsedBody = this.parseBody(tx.inMessage.body);
+        let type = PlayshubTransactionType.Unknown;
+        let payload = '';
 
-      if (parsedBody.type === 'comment') {
-        payload = parsedBody.comment;
+        if (parsedBody.type === 'comment') {
+          payload = parsedBody.comment;
+        }
+
+        return {
+          hash: tx.hash().toString('base64'),
+          timestamp: tx.now,
+          source: tx.inMessage.info.src.toString(),
+          destination: tx.inMessage.info.dest.toString(),
+          value: tx.inMessage.info.value.coins.toString(),
+          total_fees: tx.totalFees.coins.toString(),
+          payload,
+          type,
+        };
       }
 
-      return {
-        hash: tx.hash().toString('base64'),
-        timestamp: tx.now,
-        source: tx.inMessage.info.src.toString(),
-        destination: tx.inMessage.info.dest.toString(),
-        value: tx.inMessage.info.value.coins.toString(),
-        total_fees: tx.totalFees.coins.toString(),
-        payload,
-        type,
-      };
+      return null;
+    } catch (error) {
+      this.logger.debug(error);
+      this.logger.error(
+        'Error parsing transaction: ',
+        tx.hash().toString('base64'),
+      );
+      return null;
     }
-
-    return null;
   }
 
   private parseBody(cell: Cell): TxBody | null {

@@ -40,28 +40,37 @@ export class CronsService {
   }
 
   private async sync(account: ObserverAccountsEntity) {
-    const headTx = await this.tonApiService.getLastTransaction(account.address);
-    const localTx = {
-      lt: account.lastTxLt,
-      hash: account.lastTxHash,
-    };
+    try {
+      const headTx = await this.tonApiService.getLastTransaction(
+        account.address,
+      );
+      const localTx = {
+        lt: account.lastTxLt,
+        hash: account.lastTxHash,
+      };
 
-    if (!headTx) {
-      // Nothing to sync
-      return;
+      if (!headTx) {
+        // Nothing to sync
+        return;
+      }
+
+      if (BigInt(localTx.lt) >= BigInt(headTx.lt)) {
+        // Nothing to sync
+        return;
+      }
+
+      await this.realTimeSync(account.address, localTx, headTx);
+      await this.observerAccountsService.setLastTx(
+        account.address,
+        headTx.lt,
+        headTx.hash,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error while syncing account: ${account.name} from ${account.lastTxLt}`,
+      );
+      this.logger.debug(error);
     }
-
-    if (BigInt(localTx.lt) >= BigInt(headTx.lt)) {
-      // Nothing to sync
-      return;
-    }
-
-    await this.realTimeSync(account.address, localTx, headTx);
-    await this.observerAccountsService.setLastTx(
-      account.address,
-      headTx.lt,
-      headTx.hash,
-    );
   }
 
   private async realTimeSync(
@@ -70,7 +79,7 @@ export class CronsService {
     headTx: TonTxIdentify,
   ) {
     this.logger.debug(
-      `Realtime sync transactions of account: ${account} from ${headTx.lt} to  ${localTx.lt}`,
+      `Realtime sync transactions of account: ${account} from ${headTx.lt} to ${localTx.lt}`,
     );
     await this.syncService.syncLatestTransactions(account, localTx, headTx);
   }

@@ -106,24 +106,18 @@ export class SyncService {
     transactions: Transaction[],
     backfill: boolean = false,
   ) {
-    try {
-      if (transactions.length === 0) {
-        return;
-      }
-
-      const parsedTransactions = transactions
-        .map((tx) => this.parserService.parse(tx))
-        .filter((tx) => Boolean(tx));
-
-      this.eventEmitter.emit(EventChannels.PlayshubTransactionCreated, {
-        transactions: parsedTransactions,
-        backfill,
-      });
-    } catch (e) {
-      this.logger.debug(
-        `Error processing transactions: from ${transactions[0].lt.toString()} to ${transactions[transactions.length - 1].lt.toString()} of account ${transactions[0]?.inMessage?.info?.src?.toString()}`,
-      );
+    if (transactions.length === 0) {
+      return;
     }
+
+    const parsedTransactions = transactions
+      .map((tx) => this.parserService.parse(tx))
+      .filter((tx) => Boolean(tx));
+
+    this.eventEmitter.emit(EventChannels.PlayshubTransactionCreated, {
+      transactions: parsedTransactions,
+      backfill,
+    });
   }
 
   private async tryGetTransactions(
@@ -138,13 +132,16 @@ export class SyncService {
   ): Promise<Transaction[]> {
     let transactions: Transaction[] = [];
     try {
-      this.logger.log(
+      this.logger.debug(
         `[Attempts #${retryCount + 1}}] Getting transactions address (${address}), lt: ${opts.lt}, to_lt ${opts.to_lt}, hash: ${opts.hash}`,
       );
       transactions = await this.tonApiService.getTransactions(address, opts);
       return transactions;
     } catch (e) {
-      this.logger.error(e);
+      this.logger.debug(e);
+      this.logger.error(
+        `Error getting transactions address ${address}, opts: ${JSON.stringify(opts)}`,
+      );
       if (e.code === 429) {
         this.logger.error(`Rate limit exceeded`);
       }

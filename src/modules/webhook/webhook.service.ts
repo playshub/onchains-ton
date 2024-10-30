@@ -76,6 +76,7 @@ export class WebhookService {
         retryCount,
         webhookUrl,
       });
+      this.logger.debug(e);
 
       // Add a delay before retrying (using exponential backoff)
       const delayMs = Math.pow(2, retryCount) * getSettings().webhookDelayTime;
