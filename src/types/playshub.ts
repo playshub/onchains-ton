@@ -1,9 +1,7 @@
 export enum PlayshubTransactionType {
   Unknown = 'unknown',
-  CheckIn = 'check_in',
-  Deposit = 'deposit',
   Withdraw = 'withdraw',
-  Buy = 'buy',
+  Deposit = 'deposit',
 }
 
 export interface PlayshubTransaction {
