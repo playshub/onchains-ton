@@ -93,6 +93,7 @@ export class WebhookService {
         this.logger.error(
           `Max retry attempts reached for webhook: ${webhookUrl}`,
         );
+        return;
       }
 
       return this.trySendWebhook(args, retryCount + 1);
