@@ -20,7 +20,7 @@ export class ParserService {
         let type = PlayshubTransactionType.Unknown;
         let payload = '';
 
-        if (parsedBody.type === 'comment') {
+        if (parsedBody?.type === 'comment') {
           payload = parsedBody.comment;
         }
 
@@ -40,8 +40,7 @@ export class ParserService {
     } catch (error) {
       this.logger.debug(error);
       this.logger.error(
-        'Error parsing transaction: ',
-        tx.hash().toString('base64'),
+        `Error parsing transaction: ${tx.hash().toString('base64')}`,
       );
       return null;
     }
