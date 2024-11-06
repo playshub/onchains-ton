@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotAcceptableException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ObserverAccountsEntity } from './entities/observer-accounts.entity';
 import { Repository } from 'typeorm';
@@ -18,7 +22,17 @@ export class ObserverAccountsService {
     return this.observerAccountRepository.find({ where: { stopped: false } });
   }
 
-  add(address: string, name: string) {
+  async add(address: string, name: string) {
+    const account = await this.observerAccountRepository.findOne({
+      where: { address },
+    });
+
+    if (account) {
+      throw new NotAcceptableException(
+        `Account with address ${address} already exist`,
+      );
+    }
+
     const observerAccount = this.observerAccountRepository.create({
       address,
       name,
