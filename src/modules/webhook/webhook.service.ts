@@ -29,31 +29,26 @@ export class WebhookService {
 
   @OnEvent(EventChannels.PlayshubTransactionCreated)
   handlePlayshubTransactionCreated(args: PlayshubTransactionEvent['data']) {
-    for (const transaction of args.transactions) {
-      this.trySendWebhook(transaction);
-    }
+    return this.trySendWebhook(args.transactions);
   }
 
-  private async trySendWebhook(args: PlayshubTransaction, retryCount = 0) {
-    const webhookUrl = `${this.webhookUrl}/Track/AddTransaction?ApiKey=R2NLCHNUN5IV`;
+  private async trySendWebhook(
+    transactions: PlayshubTransaction[],
+    retryCount = 0,
+  ) {
+    const webhookUrl = `${this.webhookUrl}/Track/AddTransactionArray?ApiKey=R2NLCHNUN5IV`;
 
     try {
-      // Already send
-      const transaction = await this.webhookStatusRepository.findOne({
-        where: { hash: args.hash },
-      });
-      if (transaction && transaction.status === WebhookStatusType.Success) {
-        return;
-      }
-
       await this.webhookStatusRepository
         .createQueryBuilder()
         .insert()
-        .values({
-          hash: args.hash,
-          status: WebhookStatusType.Pending,
-          attempts: retryCount + 1,
-        })
+        .values(
+          transactions.map((transaction) => ({
+            hash: transaction.hash,
+            status: WebhookStatusType.Pending,
+            attempts: retryCount + 1,
+          })),
+        )
         .orUpdate(['attempts'], ['hash'])
         .execute();
 
@@ -62,14 +57,19 @@ export class WebhookService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(args),
+        body: JSON.stringify(transactions),
       });
 
       await this.webhookStatusRepository
         .createQueryBuilder()
-        .update()
-        .set({ status: WebhookStatusType.Success })
-        .where('hash = :hash', { hash: args.hash })
+        .insert()
+        .values(
+          transactions.map((transaction) => ({
+            hash: transaction.hash,
+            status: WebhookStatusType.Success,
+          })),
+        )
+        .orUpdate(['status'], ['hash'])
         .execute();
     } catch (e) {
       this.logger.error(`Webhook failed to send. Error: ${e.message}`, {
@@ -89,9 +89,14 @@ export class WebhookService {
       if (retryCount == getSettings().maxRetryCount) {
         await this.webhookStatusRepository
           .createQueryBuilder()
-          .update()
-          .set({ status: WebhookStatusType.Failed })
-          .where('hash = :hash', { hash: args.hash })
+          .insert()
+          .values(
+            transactions.map((transaction) => ({
+              hash: transaction.hash,
+              status: WebhookStatusType.Failed,
+            })),
+          )
+          .orUpdate(['status'], ['hash'])
           .execute();
         this.logger.error(
           `Max retry attempts reached for webhook: ${webhookUrl}`,
@@ -99,7 +104,7 @@ export class WebhookService {
         return;
       }
 
-      return this.trySendWebhook(args, retryCount + 1);
+      return this.trySendWebhook(transactions, retryCount + 1);
     }
   }
 }

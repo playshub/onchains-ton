@@ -5,7 +5,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { WebhookModule } from './modules/webhook/webhook.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PlayshubTransactionsModule } from './modules/playshub-transactions/playshub-transactions.module';
 import { ObserverAccountsModule } from './modules/observer-accounts/observer-accounts.module';
 
 @Module({
@@ -26,7 +25,6 @@ import { ObserverAccountsModule } from './modules/observer-accounts/observer-acc
 
     CronsModule,
     WebhookModule,
-    PlayshubTransactionsModule,
     ObserverAccountsModule,
   ],
 })

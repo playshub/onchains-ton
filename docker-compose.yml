@@ -11,26 +11,26 @@ services:
       - POSTGRES_DB=postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
-  blockchain:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: plays-data-blockchain
-    environment:
-      - PORT=3000
-      - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/postgres
-      - IS_MAINNET=${IS_MAINNET}
-      - API_KEY=${API_KEY}
-      - ANALYTICS_SERVICE_BASE_URL=${ANALYTICS_SERVICE_BASE_URL}
-      - SYNC_INTERVAL=${SYNC_INTERVAL}
-      - MAX_RETRY_COUNT=${MAX_RETRY_COUNT}
-      - REALTIME_TRANSACTIONS_BATCH_SIZE=${REALTIME_TRANSACTIONS_BATCH_SIZE}
-      - BACKFILL_TRANSACTIONS_BATCH_SIZE=${BACKFILL_TRANSACTIONS_BATCH_SIZE}
-      - BACKFILL_DELAY_TIME=${BACKFILL_DELAY_TIME}
-      - WEBHOOK_DELAY_TIME=${WEBHOOK_DELAY_TIME}
-    ports:
-      - '${PORT}:3000'
-    depends_on:
-      - postgres
+  # blockchain:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: plays-data-blockchain
+  #   environment:
+  #     - PORT=3000
+  #     - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/postgres
+  #     - IS_MAINNET=${IS_MAINNET}
+  #     - API_KEY=${API_KEY}
+  #     - ANALYTICS_SERVICE_BASE_URL=${ANALYTICS_SERVICE_BASE_URL}
+  #     - SYNC_INTERVAL=${SYNC_INTERVAL}
+  #     - MAX_RETRY_COUNT=${MAX_RETRY_COUNT}
+  #     - REALTIME_TRANSACTIONS_BATCH_SIZE=${REALTIME_TRANSACTIONS_BATCH_SIZE}
+  #     - BACKFILL_TRANSACTIONS_BATCH_SIZE=${BACKFILL_TRANSACTIONS_BATCH_SIZE}
+  #     - BACKFILL_DELAY_TIME=${BACKFILL_DELAY_TIME}
+  #     - WEBHOOK_DELAY_TIME=${WEBHOOK_DELAY_TIME}
+  #   ports:
+  #     - '${PORT}:3000'
+  #   depends_on:
+  #     - postgres
 volumes:
   postgres-data:
