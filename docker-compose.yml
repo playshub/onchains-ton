@@ -6,9 +6,9 @@ services:
     ports:
       - 5432:5432
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres-data:/var/lib/postgresql/data
   blockchain:
@@ -18,7 +18,7 @@ services:
     container_name: plays-data-blockchain
     environment:
       - PORT=3000
-      - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/postgres
+      - POSTGRES_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - IS_MAINNET=${IS_MAINNET}
       - API_KEY=${API_KEY}
       - ANALYTICS_SERVICE_BASE_URL=${ANALYTICS_SERVICE_BASE_URL}
