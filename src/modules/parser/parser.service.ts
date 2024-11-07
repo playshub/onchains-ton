@@ -16,6 +16,8 @@ export class ParserService {
         return this.parseDepositTonTx(tx);
       } else if (this.isWidthrawTonTx(tx)) {
         return this.parseWidthrawTonTx(tx);
+      } else if (this.isUnknownTx(tx)) {
+        return this.parseUnknownTx(tx);
       }
 
       this.logger.debug(
@@ -127,6 +129,24 @@ export class ParserService {
       total_fees: tx.totalFees.coins.toString(),
       payload,
       type,
+    };
+  }
+
+  private isUnknownTx(tx: Transaction): boolean {
+    return tx.inMessage && tx.inMessage.info?.type == 'internal';
+  }
+  private parseUnknownTx(tx: Transaction): PlayshubTransaction {
+    return {
+      hash: tx.hash().toString('base64'),
+      timestamp: tx.now,
+      source: tx.inMessage?.info.src.toString(),
+      destination: tx.inMessage?.info.dest.toString(),
+      value: (
+        tx.inMessage.info as CommonMessageInfoInternal
+      ).value.coins.toString(),
+      total_fees: tx.totalFees.coins.toString(),
+      payload: '',
+      type: PlayshubTransactionType.Unknown,
     };
   }
 }
