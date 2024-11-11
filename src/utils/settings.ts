@@ -13,5 +13,6 @@ export const getSettings = () => {
     ),
     backfillDelayTime: Number(process.env.BACKFILL_TRANSACTIONS_BATCH_SIZE), // ms
     webhookDelayTime: Number(process.env.WEBHOOK_DELAY_TIME), // ms
+    startTimestamp: Number(process.env.START_TIMESTAMP), // unix
   };
 };

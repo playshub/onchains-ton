@@ -8,6 +8,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventChannels } from 'src/types/events';
 import { getSettings } from 'src/utils/settings';
 import { ObserverAccountsService } from '../observer-accounts/observer-accounts.service';
+import moment from 'moment';
 
 @Injectable()
 export class SyncService {
@@ -25,7 +26,7 @@ export class SyncService {
     headTx: TonTxIdentify,
   ) {
     // Get latest transactions from lt with batch size
-    let latestTransactions = await this.tryGetTransactions(account, {
+    let latestTransactions = await this.getTransactions(account, {
       limit: getSettings().realtimeTransactionsBatchSize,
       lt: headTx.lt,
       hash: headTx.hash,
@@ -64,7 +65,7 @@ export class SyncService {
     );
     // batch sync transactions
     let nextTx = tx;
-    let nextTransactions = await this.tryGetTransactions(account, {
+    let nextTransactions = await this.getTransactions(account, {
       limit: getSettings().backfillTransactionsBatchSize,
       lt: nextTx.lt,
       hash: nextTx.hash,
@@ -85,7 +86,7 @@ export class SyncService {
       nextTx = this.getTonTxIdentifyFromTx(
         nextTransactions[nextTransactions.length - 1],
       );
-      nextTransactions = await this.tryGetTransactions(account, {
+      nextTransactions = await this.getTransactions(account, {
         limit: getSettings().backfillTransactionsBatchSize,
         lt: nextTx.lt,
         hash: nextTx.hash,
@@ -155,6 +156,27 @@ export class SyncService {
 
       return this.tryGetTransactions(address, opts, retryCount + 1);
     }
+  }
+
+  private async getTransactions(
+    address: string,
+    opts: {
+      limit: number;
+      lt?: string;
+      to_lt?: string;
+      hash?: string;
+    },
+  ) {
+    this.logger.debug(
+      `Getting transactions before ${moment.unix(getSettings().startTimestamp).format('YYYY-MM-DD HH:mm:ss')}`,
+    );
+    const transactions = await this.tryGetTransactions(address, opts);
+    const filteredTransaction = transactions.filter((transaction) =>
+      moment
+        .unix(transaction.now)
+        .isAfter(moment.unix(getSettings().startTimestamp)),
+    );
+    return filteredTransaction;
   }
 
   private getTonTxIdentifyFromTx(tx: Transaction): TonTxIdentify {
