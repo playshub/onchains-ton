@@ -59,8 +59,6 @@ export class CronsService {
         return;
       }
 
-      console.log('localLT', localTx.lt);
-      console.log('headLT', headTx.lt);
       await this.realTimeSync(account.address, localTx, headTx);
       await this.observerAccountsService.setLastTx(
         account.address,
