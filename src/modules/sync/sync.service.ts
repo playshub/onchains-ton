@@ -28,8 +28,6 @@ export class SyncService {
     // Get latest transactions from lt with batch size
     let latestTransactions = await this.getTransactions(account, {
       limit: getSettings().realtimeTransactionsBatchSize,
-      lt: headTx.lt,
-      hash: headTx.hash,
     });
 
     if (latestTransactions.length === 0) {

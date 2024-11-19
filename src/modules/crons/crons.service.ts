@@ -23,6 +23,7 @@ export class CronsService {
     if (this.lock) {
       return;
     }
+    this.lock = true;
 
     const observerAccounts = await this.observerAccountsService.getActive();
     if (observerAccounts.length === 0) {
@@ -34,7 +35,6 @@ export class CronsService {
       `Sync latest transactions every ${getSettings().syncInterval} seconds`,
     );
 
-    this.lock = true;
     await Promise.all(observerAccounts.map((account) => this.sync(account)));
     this.lock = false;
   }
@@ -59,6 +59,8 @@ export class CronsService {
         return;
       }
 
+      console.log('localLT', localTx.lt);
+      console.log('headLT', headTx.lt);
       await this.realTimeSync(account.address, localTx, headTx);
       await this.observerAccountsService.setLastTx(
         account.address,
