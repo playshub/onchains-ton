@@ -93,4 +93,16 @@ export class ObserverAccountsService {
 
     return this.observerAccountRepository.save(account);
   }
+
+  async resync() {
+    return this.observerAccountRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        synced: false,
+        lastTxHash: '',
+        lastTxLt: '0',
+      })
+      .execute();
+  }
 }

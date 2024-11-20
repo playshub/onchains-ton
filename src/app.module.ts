@@ -7,6 +7,7 @@ import { WebhookModule } from './modules/webhook/webhook.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ObserverAccountsModule } from './modules/observer-accounts/observer-accounts.module';
 import { PlayshubTransactionsModule } from './modules/playshub-transactions/playshub-transactions.module';
+import { ResyncModule } from './modules/resync/resync.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PlayshubTransactionsModule } from './modules/playshub-transactions/play
     WebhookModule,
     ObserverAccountsModule,
     PlayshubTransactionsModule,
+    ResyncModule,
   ],
 })
 export class AppModule {}
