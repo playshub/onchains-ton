@@ -28,6 +28,7 @@ export class CronsService {
     const observerAccounts = await this.observerAccountsService.getActive();
     if (observerAccounts.length === 0) {
       this.logger.debug('No observer accounts to sync');
+      this.lock = false;
       return;
     }
 
